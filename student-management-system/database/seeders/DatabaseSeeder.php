@@ -1,0 +1,20 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Order matters: roles -> users -> courses -> students -> registrations
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+            UserSeeder::class,
+            CourseSeeder::class,
+            StudentSeeder::class,
+            CourseRegistrationSeeder::class,
+        ]);
+    }
+}
