@@ -81,14 +81,33 @@ class CourseController extends Controller
         return redirect()->route('courses.index')->with('success', 'Course deleted successfully.');
     }
 
-    private function validated(Request $request, ?int $ignoreId = null): array
-    {
-        return $request->validate([
-            'code'        => ['required', 'string', 'max:20', 'unique:courses,code' . ($ignoreId ? ",$ignoreId" : '')],
-            'title'       => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'credits'     => ['required', 'integer', 'min:1', 'max:10'],
-            'lecturer_id' => ['nullable', 'exists:users,id'],
+    
+private function validated(Request $request, ?int $ignoreId = null): array
+{
+    $data = $request->validate([
+        'code' => [
+            'required',
+            'string',
+            'max:20',
+            'unique:courses,code' . ($ignoreId ? ",$ignoreId" : '')
+        ],
+        'title' => ['required', 'string', 'max:255'],
+        'description' => ['nullable', 'string', 'max:2000'],
+        'credits' => ['required', 'integer', 'min:1', 'max:10'],
+        'lecturer_id' => ['nullable', 'exists:users,id'],
+    ]);
+
+    // Ensure the selected user actually has the lecturer role.
+    if (
+        !empty($data['lecturer_id']) &&
+        !User::role('lecturer')->whereKey($data['lecturer_id'])->exists()
+    ) {
+        throw \Illuminate\Validation\ValidationException::withMessages([
+            'lecturer_id' => 'The selected user must have a lecturer role.',
         ]);
     }
+
+    return $data;
+}
+
 }
