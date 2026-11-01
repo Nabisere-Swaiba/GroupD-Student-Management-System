@@ -51,47 +51,28 @@ class StudentController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $data = $request->validate([
-            'student_number' => ['required', 'string', 'max:30', 'unique:students,student_number'],
-            'first_name' => ['required', 'string', 'max:80'],
-            'last_name' => ['required', 'string', 'max:80'],
-            'email' => ['required', 'email', 'max:150', 'unique:students,email', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20'],
-            'date_of_birth' => ['nullable', 'date', 'before:today'],
-            'programme' => ['nullable', 'string', 'max:150'],
-            'password' => ['required', 'string', 'min:8'],
+            'name'           => ['required', 'string', 'max:255'],
+            'email'          => ['required', 'email', 'max:255', 'unique:users,email'],
+            'student_number' => ['required', 'string', 'max:50', 'unique:students,student_number'],
+            'programme'      => ['required', 'string', 'max:100'],
         ]);
 
         DB::transaction(function () use ($data) {
-            // Create the login account for the student and give it the student role
             $user = User::create([
-                'name' => $data['first_name'] . ' ' . $data['last_name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => 'password', // default password, hashed by cast
             ]);
             $user->assignRole('student');
 
             Student::create([
-                'user_id' => $user->id,
+                'user_id'        => $user->id,
                 'student_number' => $data['student_number'],
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'date_of_birth' => $data['date_of_birth'] ?? null,
-                'programme' => $data['programme'] ?? null,
+                'programme'      => $data['programme'],
             ]);
         });
 
-        return redirect()->route('students.index')
-            ->with('success', 'Student created successfully.');
-    }
-
-    public function show(Student $student)
-    {
-        // Eloquent: courses the student is registered for
-        $student->load('courses.lecturer');
-
-        return view('students.show', compact('student'));
+        return redirect()->route('students.index')->with('success', 'Student created successfully.');
     }
 
     public function edit(Student $student)
