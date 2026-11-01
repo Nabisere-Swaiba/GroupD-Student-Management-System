@@ -48,6 +48,6 @@
             </tbody>
         </table>
     </div>
-    {{ $registrations->links() }}
+    
 </div>
 @endsection
