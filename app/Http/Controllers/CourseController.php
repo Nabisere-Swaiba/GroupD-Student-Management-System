@@ -42,7 +42,7 @@ class CourseController extends Controller implements HasMiddleware
 
         // ids of courses the logged-in student already registered for
         $registeredIds = $user->student
-            ? $user->student->registrations()->pluck('course_id')->all()
+            ? $user->student->courses->pluck('id')->all()
             : [];
 
         return view('courses.index', compact('courses', 'heading', 'registeredIds'));
@@ -67,7 +67,7 @@ class CourseController extends Controller implements HasMiddleware
         Gate::authorize('view', $course);
 
         $course->load('lecturer');
-        $canSeeStudents = auth()->user()->can('viewStudents', $course);
+        $canSeeStudents = auth()->user()->can('viewStudents', $course);{{}}
 
         // Eloquent: students registered for this course
         $students = $canSeeStudents ? $course->students()->orderBy('last_name')->get() : collect();
@@ -120,8 +120,4 @@ class CourseController extends Controller implements HasMiddleware
             'lecturer_id' => ['nullable', 'exists:users,id'],
         ]);
     }
-
-    return $data;
-}
-
 }
