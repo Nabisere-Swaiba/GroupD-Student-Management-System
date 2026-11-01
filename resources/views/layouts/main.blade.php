@@ -8,6 +8,12 @@
     @include('partials.theme')
 
     <style>
+        .text-danger{
+    color:#dc2626;
+    font-size:14px;
+    display:block;
+    margin-top:4px;
+}
         a{color:var(--teal)}
         .container{flex:1;width:100%;max-width:1100px;margin:32px auto 48px;padding:0 20px}
         h1,h2,h3{letter-spacing:-.02em;color:var(--ink)}
