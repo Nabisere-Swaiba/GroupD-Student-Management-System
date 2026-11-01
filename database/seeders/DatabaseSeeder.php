@@ -8,12 +8,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Order matters: roles -> users -> courses -> students -> registrations
         $this->call([
-            RolePermissionSeeder::class,
+            RolesAndPermissionsSeeder::class,
             UserSeeder::class,
-            StudentSeeder::class,
             CourseSeeder::class,
-            RegistrationSeeder::class,
+            StudentSeeder::class,
+            CourseRegistrationSeeder::class,
         ]);
     }
 }

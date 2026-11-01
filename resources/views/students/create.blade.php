@@ -1,12 +1,17 @@
-@extends('layouts.main')
-@section('title', 'Add Student')
+@extends('layouts.app')
+@section('title', 'Add student')
 
 @section('content')
-    <div class="card">
-        <h2>Add student</h2>
-        <p style="font-size:13px;color:#555">A login account is created with the default password <code>password</code>.</p>
-        <form method="POST" action="{{ route('students.store') }}">
-            @include('students._form', ['student' => new \App\Models\Student])
-        </form>
-    </div>
+<div class="page-head"><div><h1>Add student</h1><p>Creates the student record and their login account.</p></div></div>
+
+<div class="card">
+    <form method="POST" action="{{ route('students.store') }}" novalidate>
+        @csrf
+        @include('students._form')
+        <div class="form-actions">
+            <button class="btn" type="submit">Save student</button>
+            <a class="btn btn-ghost" href="{{ route('students.index') }}">Cancel</a>
+        </div>
+    </form>
+</div>
 @endsection

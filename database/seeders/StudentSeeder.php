@@ -11,23 +11,26 @@ class StudentSeeder extends Seeder
     public function run(): void
     {
         $students = [
-            ['Alice Namatovu', 'alice@student.test',  'STU/2026/001', 'BBC'],
-            ['Brian Mukasa',   'brian@student.test',  'STU/2026/002', 'BBC'],
-            ['Carol Atim',     'carol@student.test',  'STU/2026/003', 'BOIM'],
-            ['David Ssebuufu', 'david@student.test',  'STU/2026/004', 'BBC'],
-            ['Esther Achieng', 'esther@student.test', 'STU/2026/005', 'BOIM'],
+            ['26/U/0001', 'Aisha',  'Namukasa',  'aisha.namukasa@campusdesk.test', '0772000001', '2004-03-12'],
+            ['26/U/0002', 'David',  'Okello',    'david.okello@campusdesk.test',   '0772000002', '2003-11-02'],
+            ['26/U/0003', 'Grace',  'Nakato',    'grace.nakato@campusdesk.test',   '0772000003', '2004-07-21'],
+            ['26/U/0004', 'Brian',  'Mugisha',   'brian.mugisha@campusdesk.test',  '0772000004', '2003-01-30'],
+            ['26/U/0005', 'Esther', 'Atim',      'esther.atim@campusdesk.test',    '0772000005', '2004-09-15'],
+            ['26/U/0006', 'Joel',   'Ssemakula', 'joel.ssemakula@campusdesk.test', '0772000006', '2003-05-05'],
         ];
 
-        foreach ($students as [$name, $email, $number, $programme]) {
-            $user = User::firstOrCreate(
-                ['email' => $email],
-                ['name' => $name, 'password' => 'password']
-            );
-            $user->syncRoles(['student']);
-
-            Student::firstOrCreate(
+        foreach ($students as [$number, $first, $last, $email, $phone, $dob]) {
+            Student::updateOrCreate(
                 ['student_number' => $number],
-                ['user_id' => $user->id, 'programme' => $programme]
+                [
+                    'user_id' => User::where('email', $email)->value('id'),
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'date_of_birth' => $dob,
+                    'programme' => 'Bachelor of Business Computing',
+                ]
             );
         }
     }

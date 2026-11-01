@@ -1,47 +1,53 @@
-@extends('layouts.main')
-@section('title', 'Registrations')
+@extends('layouts.app')
+@section('title', $heading)
 
 @section('content')
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h2>
-            @can('manage registrations')
-                All registrations
-            @else
-                My registrations
-            @endcan
-        </h2>
-        @canany(['manage registrations', 'register courses'])
-            <a class="btn" href="{{ route('registrations.create') }}">+ New registration</a>
-        @endcanany
-    </div>
+<div class="page-head">
+    <div><h1>{{ $heading }}</h1><p>{{ $registrations->total() }} registration(s).</p></div>
+    @can('manage registrations')
+        <a class="btn" href="{{ route('registrations.create') }}">+ New registration</a>
+    @endcan
+    @can('register courses')
+        <a class="btn" href="{{ route('courses.index') }}">Browse courses</a>
+    @endcan
+</div>
 
-    <table>
-        <thead>
-        <tr>
-            @can('manage registrations')<th>Student</th>@endcan
-            <th>Course</th><th>Registered on</th><th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        @forelse ($registrations as $registration)
-            <tr>
-                @can('manage registrations')
-                    <td>{{ $registration->student->student_number }} - {{ $registration->student->user->name }}</td>
-                @endcan
-                <td>{{ $registration->course->code }} - {{ $registration->course->title }}</td>
-                <td>{{ optional($registration->registered_at)->format('d M Y') }}</td>
-                <td>
-                    <form method="POST" action="{{ route('registrations.destroy', $registration) }}" style="display:inline"
-                          onsubmit="return confirm('Remove this registration?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-danger" type="submit">Remove</button>
-                    </form>
-                </td>
-            </tr>
-        @empty
-            <tr><td colspan="4">No registrations found.</td></tr>
-        @endforelse
-        </tbody>
-    </table>
-    <div class="pagination">{{ $registrations->links() }}</div>
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    @can('view registrations') <th>Student</th> @endcan
+                    <th>Course</th><th>Lecturer</th><th>Registered</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @forelse ($registrations as $r)
+                <tr>
+                    @can('view registrations')
+                        <td>{{ $r->student->full_name }} <small>({{ $r->student->student_number }})</small></td>
+                    @endcan
+                    <td><span class="tag">{{ $r->course->code }}</span> {{ $r->course->title }}</td>
+                    <td>{{ $r->course->lecturer?->name ?? '—' }}</td>
+                    <td>{{ $r->registered_at?->format('d M Y') }}</td>
+                    <td>
+                        <div class="actions">
+                            @can('delete', $r)
+                                <form method="POST" action="{{ route('registrations.destroy', $r) }}" class="inline"
+                                      onsubmit="return confirm('Remove this registration?')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-danger btn-sm" type="submit">Remove</button>
+                                </form>
+                            @endcan
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="empty">No registrations yet.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+    {{ $registrations->links() }}
+</div>
 @endsection

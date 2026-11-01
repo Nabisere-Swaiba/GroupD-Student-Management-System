@@ -9,17 +9,27 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $users = [
-            ['Admin User',        'admin@university.test',     'admin'],
-            ['Dr. Grace Nakato',  'lecturer1@university.test', 'lecturer'],
-            ['Mr. Peter Okello',  'lecturer2@university.test', 'lecturer'],
+        $accounts = [
+            // [name, email, role]
+            ['System Administrator', 'admin@campusdesk.test', 'admin'],
+
+            ['Dr. Peter Tumusiime', 'peter.tumusiime@campusdesk.test', 'lecturer'],
+            ['Ms. Sarah Nabirye',   'sarah.nabirye@campusdesk.test',   'lecturer'],
+            ['Mr. Daniel Kato',     'daniel.kato@campusdesk.test',     'lecturer'],
+
+            ['Aisha Namukasa', 'aisha.namukasa@campusdesk.test', 'student'],
+            ['David Okello',   'david.okello@campusdesk.test',   'student'],
+            ['Grace Nakato',   'grace.nakato@campusdesk.test',   'student'],
+            ['Brian Mugisha',  'brian.mugisha@campusdesk.test',  'student'],
+            ['Esther Atim',    'esther.atim@campusdesk.test',    'student'],
+            ['Joel Ssemakula', 'joel.ssemakula@campusdesk.test', 'student'],
         ];
 
-        foreach ($users as [$name, $email, $role]) {
-            // firstOrCreate => running the seeder twice creates no duplicates
-            $user = User::firstOrCreate(
+        foreach ($accounts as [$name, $email, $role]) {
+            // updateOrCreate => running the seeder twice never duplicates users
+            $user = User::updateOrCreate(
                 ['email' => $email],
-                ['name' => $name, 'password' => 'password']   // hashed by model cast
+                ['name' => $name, 'password' => 'password']   // hashed by the model cast
             );
             $user->syncRoles([$role]);
         }
