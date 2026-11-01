@@ -120,4 +120,8 @@ class CourseController extends Controller implements HasMiddleware
             'lecturer_id' => ['nullable', 'exists:users,id'],
         ]);
     }
+
+    return $data;
+}
+
 }
