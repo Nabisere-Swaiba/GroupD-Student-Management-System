@@ -21,32 +21,43 @@ class StudentController extends Controller
         return view('students.create');
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name'           => ['required', 'string', 'max:255'],
-            'email'          => ['required', 'email', 'max:255', 'unique:users,email'],
-            'student_number' => ['required', 'string', 'max:50', 'unique:students,student_number'],
-            'programme'      => ['required', 'string', 'max:100'],
+   
+public function store(Request $request)
+{
+    $data = $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        'student_number' => [
+            'required',
+            'string',
+            'max:50',
+            'unique:students,student_number'
+        ],
+        'programme' => ['required', 'string', 'max:100'],
+    ]);
+
+    \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => 'password',
         ]);
 
-        DB::transaction(function () use ($data) {
-            $user = User::create([
-                'name'     => $data['name'],
-                'email'    => $data['email'],
-                'password' => 'password', // default password, hashed by cast
-            ]);
-            $user->assignRole('student');
+        $user->assignRole('student');
 
-            Student::create([
-                'user_id'        => $user->id,
-                'student_number' => $data['student_number'],
-                'programme'      => $data['programme'],
-            ]);
-        });
+        Student::create([
+            'user_id' => $user->id,
+            'student_number' => $data['student_number'],
+            'programme' => $data['programme'],
+        ]);
 
-        return redirect()->route('students.index')->with('success', 'Student created successfully.');
-    }
+    });
+
+    return redirect()
+        ->route('students.index')
+        ->with('success', 'Student created successfully.');
+}
 
     public function edit(Student $student)
     {
