@@ -1,69 +1,35 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\StudentController;
-use App\Models\Course;
-use App\Models\Registration;
-use App\Models\Student;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+// Public landing page
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Jetstream convention: Sanctum auth + session guard (no 'verified' so seeded users can log in)
-Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
+// Guests only
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+});
 
-    Route::get('/dashboard', function () {
-        $user = auth()->user();
-        $stats = [];
+// Authenticated users. Per-action permissions are enforced inside each controller
+// (HasMiddleware) using the spatie "permission:" middleware.
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        if ($user->can('manage students')) {
-            $stats = [
-                'Students'      => Student::count(),
-                'Courses'       => Course::count(),
-                'Registrations' => Registration::count(),
-            ];
-        } elseif ($user->can('view assigned courses')) {
-            $stats = ['My courses' => $user->taughtCourses()->count()];
-        } elseif ($user->student) {
-            $stats = [
-                'Available courses' => Course::count(),
-                'My registrations'  => $user->student->registrations()->count(),
-            ];
-        }
+    Route::resource('students', StudentController::class);
+    Route::resource('courses', CourseController::class);
 
-        return view('dashboard', compact('stats'));
-    })->name('dashboard');
+    Route::resource('registrations', RegistrationController::class)
+        ->only(['index', 'create', 'store', 'destroy']);
 
-    // ---- Students: admin only ----
-    Route::resource('students', StudentController::class)
-        ->except('show')
-        ->middleware('permission:manage students');
-
-    // ---- Courses ----
-    // Admin-only management routes (declared BEFORE courses/{course})
-    Route::middleware('permission:manage courses')->group(function () {
-        Route::resource('courses', CourseController::class)->except(['index', 'show']);
-    });
-
-    // Anyone with a course-viewing permission (content filtered by role in controller)
-    Route::get('courses', [CourseController::class, 'index'])
-        ->middleware('permission:manage courses|view assigned courses|view available courses')
-        ->name('courses.index');
-
-    // Admin + lecturer (lecturer restricted to own course inside controller)
-    Route::get('courses/{course}', [CourseController::class, 'show'])
-        ->middleware('permission:manage courses|view assigned courses')
-        ->name('courses.show');
-
-    // ---- Registrations ----
-    Route::get('registrations', [RegistrationController::class, 'index'])
-        ->middleware('permission:manage registrations|view own registrations')
-        ->name('registrations.index');
-
-    Route::middleware('permission:manage registrations|register courses')->group(function () {
-        Route::get('registrations/create', [RegistrationController::class, 'create'])->name('registrations.create');
-        Route::post('registrations', [RegistrationController::class, 'store'])->name('registrations.store');
-        Route::delete('registrations/{registration}', [RegistrationController::class, 'destroy'])->name('registrations.destroy');
-    });
+    Route::resource('users', UserController::class)
+        ->only(['index', 'edit', 'update']);
 });
