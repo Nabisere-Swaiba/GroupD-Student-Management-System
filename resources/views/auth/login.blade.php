@@ -1,55 +1,40 @@
-<x-guest-layout>
-    <x-authentication-card>
-        <x-slot name="logo">
-            <x-authentication-card-logo />
-        </x-slot>
+@extends('layouts.app')
+@section('title', 'Log in')
 
-        <div class="auth-head">
-            <span class="eyebrow">Sign in</span>
-            <h1>Welcome <span class="accent">back</span></h1>
-            <p>Log in to manage students, courses and registrations.</p>
-        </div>
+@section('content')
+<div class="auth-wrap">
+    <div class="card">
+        <span class="pill"><span class="dot"></span> Secure sign-in</span>
+        <h1 style="margin-top:.8rem">Welcome back</h1>
+        <p class="muted">Log in to manage students, courses and registrations.</p>
 
-        @if (session('status'))
-            <div class="alert success">{{ session('status') }}</div>
-        @endif
-
-        @if ($errors->any())
-            <div class="alert error">
-                <ul style="margin:0;padding-left:18px">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login.store') }}" novalidate>
             @csrf
-
-            <label class="f" for="email">Email</label>
-            <input class="f" id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
-
-            <label class="f" for="password">Password</label>
-            <input class="f" id="password" type="password" name="password" required autocomplete="current-password">
-
-            <div class="auth-row">
-                <label for="remember_me">
-                    <input id="remember_me" type="checkbox" name="remember"> Remember me
-                </label>
-
-                @if (Route::has('password.request'))
-                    <a href="{{ route('password.request') }}">Forgot your password?</a>
-                @endif
+            <div style="margin-bottom:1rem">
+                <label for="email">Email</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+                       class="{{ $errors->has('email') ? 'is-invalid' : '' }}">
             </div>
-
-            <button type="submit" class="btn btn-block">Log in</button>
-
-            @if (Route::has('register'))
-                <p style="text-align:center;margin:18px 0 0;font-size:13px;color:var(--muted)">
-                    New student? <a href="{{ route('register') }}" style="color:var(--teal);font-weight:600;text-decoration:none">Create an account</a>
-                </p>
-            @endif
+            <div style="margin-bottom:1rem">
+                <label for="password">Password</label>
+                <input id="password" type="password" name="password" required
+                       class="{{ $errors->has('password') ? 'is-invalid' : '' }}">
+            </div>
+            <label style="display:flex;gap:.5rem;align-items:center;font-weight:500">
+                <input type="checkbox" name="remember" style="width:auto"> Remember me
+            </label>
+            <div class="form-actions">
+                <button class="btn" type="submit">Log in</button>
+                <a class="btn btn-ghost" href="{{ route('home') }}">Cancel</a>
+            </div>
         </form>
-    </x-authentication-card>
-</x-guest-layout>
+
+        <div class="demo">
+            <strong>Demo accounts</strong> (password: <code>password</code>)<br>
+            <code>admin@campus.desk.test</code> · Administrator<br>
+            <code>peter.tumusiime@campus.desk.test</code> · Lecturer<br>
+            <code>aisha.namukasa@campus.desk.test</code> · Student
+        </div>
+    </div>
+</div>
+@endsection

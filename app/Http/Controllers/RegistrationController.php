@@ -3,87 +3,105 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\Registration;
+use App\Models\CourseRegistration;
 use App\Models\Student;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-class RegistrationController extends Controller
+class RegistrationController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view registrations|view own registrations', only: ['index']),
+            new Middleware('permission:manage registrations', only: ['create']),
+            new Middleware('permission:manage registrations|register courses', only: ['store', 'destroy']),
+        ];
+    }
+
     public function index()
     {
         $user = auth()->user();
 
-        if ($user->can('manage registrations')) {
-            $registrations = Registration::with(['student.user', 'course'])->latest()->paginate(15);
+        $query = CourseRegistration::with(['student', 'course.lecturer'])->latest('registered_at');
+
+        if ($user->can('view registrations')) {
+            $heading = 'All course registrations';
         } else {
-            // Students only ever see their OWN registrations
-            abort_unless($user->student, 403);
-            $registrations = Registration::with('course')
-                ->where('student_id', $user->student->id)
-                ->latest()->paginate(15);
+            // students only ever see THEIR OWN registrations
+            $student = $user->student;
+            abort_unless($student, 403, 'Your account has no student profile.');
+            $query->where('student_id', $student->id);
+            $heading = 'My registrations';
         }
 
-        return view('registrations.index', compact('registrations'));
+        $registrations = $query->paginate(10);
+
+        return view('registrations.index', compact('registrations', 'heading'));
     }
 
+    /** Admin form: register any student for any course. */
     public function create()
     {
-        $courses  = Course::orderBy('code')->get();
-        $students = auth()->user()->can('manage registrations')
-            ? Student::with('user')->orderBy('student_number')->get()
-            : collect();
-
-        return view('registrations.create', compact('courses', 'students'));
+        return view('registrations.create', [
+            'students' => Student::orderBy('last_name')->get(),
+            'courses' => Course::orderBy('code')->get(),
+        ]);
     }
 
     public function store(Request $request)
     {
         $user = auth()->user();
+        $isAdmin = $user->can('manage registrations');
 
-        // Decide WHICH student is being registered
-        if ($user->can('manage registrations')) {
+        if ($isAdmin) {
             $request->validate(['student_id' => ['required', 'exists:students,id']]);
-            $studentId = (int) $request->student_id;
+            $studentId = (int) $request->input('student_id');
         } else {
-            abort_unless($user->student, 403);
-            $studentId = $user->student->id;      // students can only register themselves
+            // a student can only register THEMSELVES
+            if (! $user->student) {
+                return back()->with('error', 'Your account has no student profile. Please contact the administrator.');
+            }
+            $studentId = $user->student->id;
         }
 
-        $validator = Validator::make($request->all(), [
-            'course_id' => [
-                'required',
-                'exists:courses,id',
-                // duplicate-registration prevention
-                Rule::unique('registrations', 'course_id')->where('student_id', $studentId),
+        $request->validate(
+            [
+                'course_id' => [
+                    'required',
+                    'exists:courses,id',
+                    // duplicate-registration prevention
+                    Rule::unique('course_registrations', 'course_id')->where('student_id', $studentId),
+                ],
             ],
-        ], [
-            'course_id.unique' => 'This student is already registered for the selected course.',
-        ]);
+            ['course_id.unique' => 'This student is already registered for that course.']
+        );
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
+        $course = Course::findOrFail($request->input('course_id'));
+
+        if ($course->isFull()) {
+            return back()->withInput()->with('error', "{$course->code} is full. Registration was not completed.");
         }
 
-        Registration::create([
-            'student_id'    => $studentId,
-            'course_id'     => $request->course_id,
+        CourseRegistration::create([
+            'student_id' => $studentId,
+            'course_id' => $course->id,
             'registered_at' => now(),
         ]);
 
-        return redirect()->route('registrations.index')->with('success', 'Course registration successful.');
+        $route = $isAdmin ? 'registrations.index' : 'courses.index';
+
+        return redirect()->route($route)
+            ->with('success', "Registered for {$course->code} - {$course->title}.");
     }
 
-    public function destroy(Registration $registration)
+    public function destroy(CourseRegistration $registration)
     {
-        $user = auth()->user();
-
-        // Only admin, or the owner of the registration, may remove it
-        abort_unless(
-            $user->can('manage registrations') || optional($user->student)->id === $registration->student_id,
-            403
-        );
+        // admins: any registration; students: only their own
+        Gate::authorize('delete', $registration);
 
         $registration->delete();
 

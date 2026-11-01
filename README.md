@@ -1,59 +1,134 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CampusDesk — Student Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel application for **BUC3131 Advanced Web Application Development – Coursework Two**
+(Makerere University Business School, 2026/2027).
 
-## About Laravel
+Administrators manage students, courses, registrations and user access. Lecturers view their
+assigned courses and the students registered for them. Students view available courses,
+register for them and see their own registrations.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Stack:** Laravel 12 · Eloquent ORM · Blade · [spatie/laravel-permission](https://spatie.be/docs/laravel-permission) · SQLite (default) or MySQL.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 1. Requirements
+- PHP 8.2+ (with the `pdo_sqlite` or `pdo_mysql`, `mbstring`, `openssl`, `fileinfo` extensions)
+- Composer 2+
+- Git
 
-## Learning Laravel
+## 2. Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+This repository contains the **application files** (models, migrations, controllers, routes,
+views, seeders, CSS). They are placed on top of a fresh Laravel install:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+# 1. create a fresh Laravel project
+composer create-project laravel/laravel student-management
+cd student-management
 
-## Laravel Sponsors
+# 2. copy EVERYTHING from this repository into student-management/
+#    (answer "yes" / overwrite when asked)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# 3. run the setup script
+./setup.sh          # macOS / Linux / Git Bash
+setup.bat           # Windows CMD
+```
 
-### Premium Partners
+The setup script does these steps (you can also run them manually):
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+composer require spatie/laravel-permission
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+cp .env.example .env            # skip if .env already exists
+php artisan key:generate
+php artisan migrate:fresh --seed
+```
 
-## Contributing
+Start the server:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan serve
+```
+Open <http://127.0.0.1:8000>.
 
-## Code of Conduct
+## 3. Database setup
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**SQLite (default, zero config).** Laravel's default `.env` already uses SQLite and creates
+`database/database.sqlite`. If the file is missing: `touch database/database.sqlite`
+(Windows: `type nul > database\database.sqlite`).
 
-## Security Vulnerabilities
+**MySQL.** Create a database (e.g. `campusdesk`) and edit `.env`:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=campusdesk
+DB_USERNAME=root
+DB_PASSWORD=
+```
+Then run `php artisan migrate:fresh --seed`.
 
-## License
+### Tables
+| Table | Purpose |
+|---|---|
+| `users` | Login accounts (Laravel default) |
+| `students` | Student profiles; `user_id` → `users.id` (nullOnDelete) |
+| `courses` | Courses; `lecturer_id` → `users.id` (nullOnDelete) |
+| `course_registrations` | Pivot: `student_id` → `students`, `course_id` → `courses` (cascade) with **unique(student_id, course_id)** |
+| `roles`, `permissions`, `model_has_roles`, … | Created by spatie/laravel-permission |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Eloquent relationships
+- `User hasOne Student`, `User hasMany Course` (as lecturer)
+- `Course belongsTo User` (lecturer), `Course hasMany CourseRegistration`
+- `Student hasMany CourseRegistration`, `CourseRegistration belongsTo Student / Course`
+- `Student belongsToMany Course` → `$student->courses` (a student's courses)
+- `Course belongsToMany Student` → `$course->students` (students on a course)
+
+## 4. Roles, permissions and sample logins
+
+All sample accounts use the password **`password`**.
+
+| Role | Email | Can do |
+|---|---|---|
+| **Administrator** | `admin@campusdesk.test` | Everything: CRUD students & courses, manage registrations, change user roles |
+| **Lecturer** | `peter.tumusiime@campusdesk.test` | View **their own** assigned courses and the students registered on them |
+| **Lecturer** | `sarah.nabirye@campusdesk.test` | same |
+| **Lecturer** | `daniel.kato@campusdesk.test` | same |
+| **Student** | `aisha.namukasa@campusdesk.test` | View available courses, register/cancel, view **own** registrations |
+| **Student** | `david.okello@campusdesk.test` | same (also `grace.nakato@…`, `brian.mugisha@…`, `esther.atim@…`, `joel.ssemakula@…`) |
+
+Permissions are created in `database/seeders/RolesAndPermissionsSeeder.php`
+(e.g. `view students`, `create courses`, `register courses`, `manage users`, …).
+Routes are protected with `auth` and `permission:` middleware (set in each controller via
+`HasMiddleware`), and record-level access (lecturers → own courses only, students → own
+registrations only) is enforced in `CoursePolicy` and `CourseRegistrationPolicy`.
+
+## 5. Seeding
+`php artisan migrate:fresh --seed` creates roles/permissions, 10 users, 5 courses, 6 students
+and sample registrations. Seeders use `updateOrCreate` / `firstOrCreate`, so
+`php artisan db:seed` can be re-run without creating duplicates.
+
+## 6. Screenshots
+Add screenshots of the running app to `docs/screenshots/` and link them here:
+
+- `docs/screenshots/home.png`
+- `docs/screenshots/login.png`
+- `docs/screenshots/admin-dashboard.png`
+- `docs/screenshots/students.png`
+- `docs/screenshots/courses.png`
+- `docs/screenshots/registrations.png`
+- `docs/screenshots/lecturer-view.png`
+- `docs/screenshots/student-view.png`
+
+## 7. Group work (GitHub)
+`main` = stable, `develop` = integration, each member works on `feature/<name>` and opens
+pull requests into `develop`. See the contribution report for members, branches and PRs.
+
+| Member | Reg. no. | Branch | Contribution |
+|---|---|---|---|
+| _name_ | _reg no_ | `feature/relationships` | Migrations, models, relationships |
+| _name_ | _reg no_ | `feature/seeders` | Seeders and sample data |
+| _name_ | _reg no_ | `feature/auth-roles` | Authentication, roles, permissions, policies |
+| _name_ | _reg no_ | `feature/student-management` | Student & course CRUD |
+| _name_ | _reg no_ | `feature/registration-ui` | Registrations, Blade layout, CSS, README |

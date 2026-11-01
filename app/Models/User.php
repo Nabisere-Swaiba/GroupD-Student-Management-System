@@ -2,29 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
-use Laravel\Jetstream\HasProfilePhoto;
-use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasProfilePhoto, Notifiable, TwoFactorAuthenticatable;
-    use HasRoles; // spatie/laravel-permission
+    use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = ['name', 'email', 'password'];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-        'two_factor_recovery_codes',
-        'two_factor_secret',
-    ];
-
-    protected $appends = ['profile_photo_url'];
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
@@ -34,15 +26,31 @@ class User extends Authenticatable
         ];
     }
 
-    // One user (with student role) has one student profile
-    public function student()
+    /** A user (with the student role) has one student profile. */
+    public function student(): HasOne
     {
         return $this->hasOne(Student::class);
     }
 
-    // A lecturer teaches many courses
-    public function taughtCourses()
+    /** A user (with the lecturer role) teaches many courses. */
+    public function courses(): HasMany
     {
         return $this->hasMany(Course::class, 'lecturer_id');
+    }
+
+    protected function initials(): Attribute
+    {
+        return Attribute::get(function () {
+            return collect(preg_split('/\s+/', trim($this->name)))
+                ->filter()
+                ->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))
+                ->take(2)
+                ->implode('');
+        });
+    }
+
+    public function roleName(): string
+    {
+        return $this->getRoleNames()->first() ?? 'no role';
     }
 }

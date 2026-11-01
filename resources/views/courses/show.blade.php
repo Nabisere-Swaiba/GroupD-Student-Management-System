@@ -1,29 +1,61 @@
-@extends('layouts.main')
+@extends('layouts.app')
 @section('title', $course->code)
 
 @section('content')
+<div class="page-head">
+    <div><h1>{{ $course->code }} — {{ $course->title }}</h1><p>Lecturer: {{ $course->lecturer?->name ?? 'Not assigned' }}</p></div>
+    <a class="btn btn-ghost" href="{{ route('courses.index') }}">&larr; Back</a>
+</div>
+
+<div class="grid grid-2" style="margin-bottom:1.25rem">
     <div class="card">
-        <h2>{{ $course->code }} &mdash; {{ $course->title }}</h2>
-        <p>Lecturer: {{ optional($course->lecturer)->name ?? 'Unassigned' }} | Credits: {{ $course->credits }}</p>
-        <p>{{ $course->description }}</p>
+        <h3>About this course</h3>
+        <p class="muted">{{ $course->description ?: 'No description provided.' }}</p>
+        <dl class="kv">
+            <dt>Credit units</dt><dd>{{ $course->credit_units }}</dd>
+            <dt>Capacity</dt><dd>{{ $course->capacity }} students</dd>
+        </dl>
     </div>
 
-    <h3>Registered students ({{ $course->students->count() }})</h3>
-    <table>
-        <thead><tr><th>Number</th><th>Name</th><th>Email</th><th>Programme</th><th>Registered on</th></tr></thead>
-        <tbody>
-        @forelse ($course->students as $student)
-            <tr>
-                <td>{{ $student->student_number }}</td>
-                <td>{{ $student->user->name }}</td>
-                <td>{{ $student->user->email }}</td>
-                <td>{{ $student->programme }}</td>
-                <td>{{ optional($student->pivot->registered_at ? \Illuminate\Support\Carbon::parse($student->pivot->registered_at) : null)->format('d M Y') }}</td>
-            </tr>
-        @empty
-            <tr><td colspan="5">No students registered yet.</td></tr>
-        @endforelse
-        </tbody>
-    </table>
-    <p><a class="btn btn-secondary" href="{{ route('courses.index') }}">&larr; Back</a></p>
+    @can('register courses')
+        <div class="card">
+            <h3>Registration</h3>
+            @if ($isRegistered)
+                <p><span class="badge badge-student">You are registered for this course</span></p>
+            @elseif ($course->isFull())
+                <p><span class="badge badge-full">This course is full</span></p>
+            @else
+                <p class="muted">Seats are available. Register to secure your place.</p>
+                <form method="POST" action="{{ route('registrations.store') }}">
+                    @csrf
+                    <input type="hidden" name="course_id" value="{{ $course->id }}">
+                    <button class="btn" type="submit">Register for this course</button>
+                </form>
+            @endif
+        </div>
+    @endcan
+</div>
+
+@if ($canSeeStudents)
+    <div class="card">
+        <h3>Registered students ({{ $students->count() }})</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Number</th><th>Name</th><th>Email</th><th>Registered</th></tr></thead>
+                <tbody>
+                @forelse ($students as $student)
+                    <tr>
+                        <td><span class="tag">{{ $student->student_number }}</span></td>
+                        <td>{{ $student->full_name }}</td>
+                        <td>{{ $student->email }}</td>
+                        <td>{{ \Illuminate\Support\Carbon::parse($student->pivot->registered_at)->format('d M Y') }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="empty">No students registered yet.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
 @endsection
