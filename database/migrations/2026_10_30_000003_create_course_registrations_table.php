@@ -15,7 +15,7 @@ return new class extends Migration
             $table->timestamp('registered_at')->nullable();
             $table->timestamps();
 
-            // A student can register for a course only once
+            // the student can register for a course only once
             $table->unique(['student_id', 'course_id']);
         });
     }
