@@ -31,9 +31,9 @@
 
         <div class="demo">
             <strong>Demo accounts</strong> (password: <code>password</code>)<br>
-            <code>admin@campus.desk.test</code> · Administrator<br>
-            <code>peter.tumusiime@campus.desk.test</code> · Lecturer<br>
-            <code>aisha.namukasa@campus.desk.test</code> · Student
+            <code>admin@campusdesk.test</code> · Administrator<br>
+            <code>peter.tumusiime@campusdesk.test</code> · Lecturer<br>
+            <code>aisha.namukasa@campusdesk.test</code> · Student
         </div>
     </div>
 </div>

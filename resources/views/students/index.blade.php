@@ -53,6 +53,6 @@
             </tbody>
         </table>
     </div>
-    {{ $students->links() }}
+    
 </div>
 @endsection
