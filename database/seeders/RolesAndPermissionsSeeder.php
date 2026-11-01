@@ -11,41 +11,57 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear the cached roles/permissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $permissions = [
-            // students
-            'view students', 'create students', 'edit students', 'delete students',
-            // courses
-            'view courses', 'create courses', 'edit courses', 'delete courses',
-            'view assigned courses',     // lecturer
-            'view available courses',    // student
-            // registrations
-            'view registrations', 'manage registrations',
-            'register courses', 'view own registrations',   // student
-            // users
+            'view students',
+            'create students',
+            'edit students',
+            'delete students',
+            'view courses',
+            'create courses',
+            'edit courses',
+            'delete courses',
+            'view assigned courses',
+            'view available courses',
+            'view registrations',
+            'manage registrations',
+            'register courses',
+            'view own registrations',
             'manage users',
         ];
 
         foreach ($permissions as $name) {
-            Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+            Permission::firstOrCreate([
+                'name' => $name,
+                'guard_name' => 'web',
+            ]);
         }
 
-        // Administrator: everything
-        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web'])
-            ->syncPermissions(Permission::all());
+        // Admin gets all permissions
+        Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ])->syncPermissions(Permission::all());
 
-        // Lecturer: sees assigned courses and their registered students
-        Role::firstOrCreate(['name' => 'lecturer', 'guard_name' => 'web'])
-            ->syncPermissions(['view assigned courses']);
+        // Lecturer permissions
+        Role::firstOrCreate([
+            'name' => 'lecturer',
+            'guard_name' => 'web',
+        ])->syncPermissions([
+            'view assigned courses',
+        ]);
 
-        // Student: sees available courses and own registrations
-        Role::firstOrCreate(['name' => 'student', 'guard_name' => 'web'])
-            ->syncPermissions([
-                'view available courses',
-                'register courses',
-                'view own registrations',
-            ]);
+        // Student permissions
+        Role::firstOrCreate([
+            'name' => 'student',
+            'guard_name' => 'web',
+        ])->syncPermissions([
+            'view available courses',
+            'register courses',
+            'view own registrations',
+        ]);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
